@@ -16,16 +16,12 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-      - name: Restore original project archive
-        run: |
-          base64 -d WkbRemote-Full.zip.b64 > WkbRemote-Full.zip
-          unzip -q WkbRemote-Full.zip
       - name: Build debug APK
-        working-directory: WkbRemote-Full/android
+        working-directory: android
         run: gradle --no-daemon assembleDebug
       - uses: actions/upload-artifact@v4
         with:
           name: WkbRemote-apk
-          path: WkbRemote-Full/android/app/build/outputs/apk/debug/app-debug.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
