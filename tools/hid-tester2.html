@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>HID Tester v2 (6125:2012)</title>
+<style>
+body{font-family:Segoe UI,Arial,sans-serif;margin:16px;background:#fff;color:#111}
+button,input{font-size:17px;padding:8px 14px;margin:3px}
+pre{background:#111;color:#9ef59e;padding:10px;direction:ltr;text-align:left;max-height:50vh;overflow:auto;font-size:14px;line-height:1.5}
+#info{direction:ltr;text-align:left;background:#eee;padding:8px;white-space:pre-wrap;font-size:12px;max-height:20vh;overflow:auto}
+b{color:#ff6b6b}
+</style></head><body>
+<h3>اختبار المستقبل v2: يسجل التغيّر فقط</h3>
+<p>1) Connect. 2) اكتب اسم الزر في الخانة. 3) اضغط الزر في الريموت ثم اتركه. تُسجَّل البايتات التي تغيّرت فقط (بالأحمر).</p>
+<button id="c">Connect</button><input id="lab" placeholder="اسم الزر مثل Start"><button id="cl">Clear</button><button id="cp">Copy</button>
+<div id="info">لا يوجد اتصال</div>
+<pre id="log"></pre>
+<script>
+var log=document.getElementById('log'),info=document.getElementById('info'),base=null,last=null,n=0;
+function h(b){return ('0'+b.toString(16)).slice(-2)}
+document.getElementById('c').onclick=async function(){
+  if(!('hid' in navigator)){info.textContent='استخدم Chrome أو Edge';return}
+  try{
+    var d=await navigator.hid.requestDevice({filters:[{vendorId:0x6125,productId:0x2012}]});
+    if(!d.length)return;var dev=d[0];if(!dev.opened)await dev.open();
+    info.textContent='Connected '+dev.productName+'\n'+JSON.stringify(dev.collections.map(function(c){return {usagePage:c.usagePage,usage:c.usage,in:(c.inputReports||[]).map(function(r){return r.reportId})}}));
+    dev.addEventListener('inputreport',function(e){
+      var a=new Uint8Array(e.data.buffer);
+      if(!base){base=a;last=a;log.innerHTML+='ID='+e.reportId+' len='+a.length+' idle: '+Array.from(a).map(h).join(' ')+'\n';return}
+      var diff=[];for(var i=0;i<a.length;i++)if(a[i]!==last[i])diff.push(i);
+      if(!diff.length)return;
+      var lab=document.getElementById('lab').value||'?';
+      var s=Array.from(a).map(function(v,i){return diff.indexOf(i)>-1?'<b>'+h(v)+'</b>':h(v)}).join(' ');
+      log.innerHTML+=(++n)+' ['+lab+'] changed@'+diff.join(',')+' : '+s+'\n';
+      log.scrollTop=log.scrollHeight;last=a;
+    });
+  }catch(err){info.textContent='خطأ: '+err}
+};
+document.getElementById('cl').onclick=function(){log.innerHTML='';base=null;last=null;n=0};
+document.getElementById('cp').onclick=function(){navigator.clipboard.writeText(log.innerText)};
+</script></body></html>
