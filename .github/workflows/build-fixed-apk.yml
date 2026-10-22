@@ -18,26 +18,37 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-      - name: Reduce spacing between buttons
-        working-directory: android
+      - name: Extract the user's uploaded project ZIP
+        run: |
+          python3 - <<'PY'
+          import base64, zipfile
+          from pathlib import Path
+          encoded = Path('WkbRemote-Full.zip.b64').read_text().strip()
+          archive = Path('/tmp/WkbRemote-Full.zip')
+          archive.write_bytes(base64.b64decode(encoded))
+          with zipfile.ZipFile(archive) as z:
+              z.extractall('/tmp/uploaded-project')
+          print('Extracted uploaded project ZIP.')
+          PY
+      - name: Reduce spacing between buttons in uploaded source
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          p = Path('app/src/main/java/com/example/wkbremote/MainActivity.kt')
+          p = Path('/tmp/uploaded-project/WkbRemote-Full/android/app/src/main/java/com/example/wkbremote/MainActivity.kt')
           s = p.read_text()
           old = 'setMargins(dp(4), dp(4), dp(4), dp(4))'
-          new = 'setMargins(dp(2), dp(2), dp(2), dp(2))'
+          new = 'setMargins(dp(1), dp(1), dp(1), dp(1))'
           if old not in s:
               raise SystemExit('Expected button margin expression was not found; refusing to build an unpatched APK.')
           p.write_text(s.replace(old, new))
-          print('Button margins changed from 4dp to 2dp on each side.')
+          print('Button margins changed from 4dp to 1dp on each side (2dp gap between adjacent buttons).')
           PY
-      - name: Build debug APK
-        working-directory: android
+      - name: Build APK from uploaded project
+        working-directory: /tmp/uploaded-project/WkbRemote-Full/android
         run: gradle --no-daemon assembleDebug
       - uses: actions/upload-artifact@v4
         with:
           name: WkbRemote-apk-fixed
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: /tmp/uploaded-project/WkbRemote-Full/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
