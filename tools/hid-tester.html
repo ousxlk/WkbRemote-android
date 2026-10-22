@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>HID Tester 6125:2012</title>
+<style>
+body{font-family:Segoe UI,Arial,sans-serif;margin:20px;background:#fff;color:#111}
+button{font-size:18px;padding:10px 22px;margin:4px;cursor:pointer}
+pre{background:#111;color:#9ef59e;padding:12px;direction:ltr;text-align:left;max-height:55vh;overflow:auto;font-size:15px}
+#info{direction:ltr;text-align:left;background:#eee;padding:10px;white-space:pre-wrap;font-size:13px}
+</style></head><body>
+<h2>اختبار المستقبل (VID 6125 / PID 2012)</h2>
+<p>افتح الصفحة في Chrome، اضغط Connect، ثم اضغط أزرار الريموت واحداً واحداً.</p>
+<button id="c">Connect</button><button id="a">Connect (any device)</button><button id="cl">Clear</button><button id="cp">Copy log</button>
+<div id="info">لا يوجد اتصال</div>
+<h3>التقارير الواردة</h3>
+<pre id="log"></pre>
+<script>
+var log=document.getElementById('log'),info=document.getElementById('info'),t0=0;
+function hex(dv){var s=[];for(var i=0;i<dv.byteLength;i++)s.push(('0'+dv.getUint8(i).toString(16)).slice(-2));return s.join(' ')}
+async function go(filters){
+  if(!('hid' in navigator)){info.textContent='المتصفح لا يدعم WebHID. استخدم Chrome أو Edge.';return}
+  try{
+    var d=await navigator.hid.requestDevice({filters:filters});
+    if(!d.length){info.textContent='لم يتم اختيار جهاز';return}
+    var dev=d[0];if(!dev.opened)await dev.open();
+    info.textContent='Connected: '+dev.productName+'  VID '+dev.vendorId.toString(16)+' PID '+dev.productId.toString(16)+
+      '\nCollections:\n'+JSON.stringify(dev.collections,null,1);
+    t0=performance.now();
+    dev.addEventListener('inputreport',function(e){
+      var ms=Math.round(performance.now()-t0);
+      log.textContent+=ms+'ms  ID='+e.reportId+'  len='+e.data.byteLength+'  data: '+hex(e.data)+'\n';
+      log.scrollTop=log.scrollHeight;
+    });
+  }catch(err){info.textContent='خطأ: '+err}
+}
+document.getElementById('c').onclick=function(){go([{vendorId:0x6125,productId:0x2012}])};
+document.getElementById('a').onclick=function(){go([])};
+document.getElementById('cl').onclick=function(){log.textContent=''};
+document.getElementById('cp').onclick=function(){navigator.clipboard.writeText(info.textContent+'\n'+log.textContent)};
+</script></body></html>
