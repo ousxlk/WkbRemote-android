@@ -224,16 +224,25 @@ class MainActivity : Activity() {
                     setTextColor(if (k.color == red || k.color == green) Color.WHITE else ink)
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
                     typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-                    setPadding(0, 0, 0, dp(3))
+                    setPadding(0, 0, 0, 0)
+                    includeFontPadding = false
                     minHeight = 0
                     minimumHeight = 0
                     stateListAnimator = null
                     gravity = Gravity.CENTER
                     setOnTouchListener { v, e -> touch(i, v, e); true }
                 }
-                row.addView(btn, LinearLayout.LayoutParams(0, dp(54), 1f).apply {
+
+                // Give every key the same full-size cell so multiline labels
+                // (Dry Cut, PT LOC, Edge Seek, etc.) never shift the button edges.
+                val cell = FrameLayout(this)
+                cell.addView(btn, FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                ).apply {
                     setMargins(dp(4), dp(4), dp(4), dp(4))
                 })
+                row.addView(cell, LinearLayout.LayoutParams(0, dp(62), 1f))
             }
             panel.addView(row)
         }
